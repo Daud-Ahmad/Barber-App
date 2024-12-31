@@ -3,18 +3,17 @@ package com.qtt.thebarber.Fragments;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnSuccessListener;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -23,7 +22,6 @@ import com.qtt.thebarber.Common.Common;
 import com.qtt.thebarber.Common.SpacesItemDecoration;
 import com.qtt.thebarber.MainActivity;
 import com.qtt.thebarber.Model.LookBook;
-import com.qtt.thebarber.Model.User;
 import com.qtt.thebarber.R;
 import com.qtt.thebarber.UpdateProfileActivity;
 import com.qtt.thebarber.databinding.FragmentProfileBinding;
@@ -49,7 +47,7 @@ public class ProfileFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         binding = FragmentProfileBinding.inflate(inflater, container, false);
         View view = binding.getRoot();
@@ -63,7 +61,7 @@ public class ProfileFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        if (Common.currentUser.getAvatar().isEmpty()) {
+        if (Common.currentUser.getAvatar() != null && Common.currentUser.getAvatar().isEmpty()) {
             binding.imgUserAvatar.setImageDrawable(getContext().getResources().getDrawable(R.drawable.user_avatar));
         } else {
             Log.d("Update_profile", "onResume: fragment profile " + Common.currentUser.getAvatar());
@@ -72,14 +70,19 @@ public class ProfileFragment extends Fragment {
 
         binding.tvUserName.setText(Common.currentUser.getName());
         binding.tvUserPhone.setText(Common.currentUser.getAddress());
-        binding.tvUserRank.setText(Common.getRank((int) Math.round(Common.currentUser.getMoney())));
+        if(Common.currentUser.getMoney() != null){
+            binding.tvUserRank.setText(Common.getRank((int) Math.round(Common.currentUser.getMoney())));
+        }
+        else {
+            binding.tvUserRank.setText("0.0");
+        }
         getLookBook();
     }
 
     private void initView() {
 //        dialog = new SpotsDialog.Builder().setContext(getContext()).setCancelable(false).build();
 
-        if (Common.currentUser.getAvatar().isEmpty()) {
+        if (Common.currentUser != null && Common.currentUser.getAvatar() != null && Common.currentUser.getAvatar().isEmpty()) {
             binding.imgUserAvatar.setImageDrawable(getContext().getResources().getDrawable(R.drawable.user_avatar));
         } else {
             Picasso.get().load(Common.currentUser.getAvatar()).error(R.drawable.user_avatar).into(binding.imgUserAvatar);
@@ -87,7 +90,12 @@ public class ProfileFragment extends Fragment {
 
         binding.tvUserName.setText(Common.currentUser.getName());
         binding.tvUserPhone.setText(Common.currentUser.getAddress());
-        binding.tvUserRank.setText(Common.getRank((int) Math.round(Common.currentUser.getMoney())));
+        if(Common.currentUser.getMoney() != null){
+            binding.tvUserRank.setText(Common.getRank((int) Math.round(Common.currentUser.getMoney())));
+        }
+        else {
+            binding.tvUserRank.setText("0.0");
+        }
 
         binding.recyclerLookBook.setHasFixedSize(true);
         binding.recyclerLookBook.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.HORIZONTAL, false));

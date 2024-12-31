@@ -1,8 +1,6 @@
 package com.qtt.thebarber;
 
-import android.os.Build;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -25,18 +23,12 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.qtt.thebarber.Common.Common;
 import com.qtt.thebarber.Fragments.HomeFragment;
 import com.qtt.thebarber.Fragments.ProfileFragment;
 import com.qtt.thebarber.Fragments.ShoppingFragment;
 import com.qtt.thebarber.Model.User;
 import com.qtt.thebarber.databinding.ActivityHomeBinding;
-
-import java.util.Map;
-//import dmax.dialog.SpotsDialog;
-//import io.paperdb.Paper;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -60,17 +52,17 @@ public class HomeActivity extends AppCompatActivity {
 //        Paper.init(this);
         String dataSerialized = "Paper.book().read(Common.RATING_INFORMATION_KEY,)";
 
-        if (!TextUtils.isEmpty(dataSerialized)) {
-            Map<String, String> dataReceived = new Gson().fromJson(dataSerialized, new TypeToken<Map<String, String>>() {
-            }.getType());
-
-            if (dataReceived != null) {
-                Common.showRatingDialog(HomeActivity.this, dataReceived.get(Common.RATING_STATE_KEY),
-                        dataReceived.get(Common.RATING_SALON_ID),
-                                dataReceived.get(Common.RATING_SALON_NAME),
-                                        dataReceived.get(Common.RATING_BARBER_ID));
-            }
-        }
+//        if (!TextUtils.isEmpty(dataSerialized)) {
+//            Map<String, String> dataReceived = new Gson().fromJson(dataSerialized, new TypeToken<Map<String, String>>() {
+//            }.getType());
+//
+//            if (dataReceived != null) {
+//                Common.showRatingDialog(HomeActivity.this, dataReceived.get(Common.RATING_STATE_KEY),
+//                        dataReceived.get(Common.RATING_SALON_ID),
+//                                dataReceived.get(Common.RATING_SALON_NAME),
+//                                        dataReceived.get(Common.RATING_BARBER_ID));
+//            }
+//        }
     }
 
     @Override
@@ -79,9 +71,7 @@ public class HomeActivity extends AppCompatActivity {
         binding = ActivityHomeBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorAccent2));
-        }
+        getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorAccent2));
 
 
         userRef = FirebaseFirestore.getInstance().collection("User");
@@ -96,23 +86,16 @@ public class HomeActivity extends AppCompatActivity {
             public boolean onNavigationItemSelected (@NonNull MenuItem menuItem){
                 if (menuItem.getItemId() == R.id.action_home) {
                     fragment = new HomeFragment();
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorAccent2));
-                    }
+                    getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorAccent2));
                 } else if (menuItem.getItemId() == R.id.action_shopping) {
                     fragment = new ShoppingFragment();
+                    getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorBackground));
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorBackground));
-                    }
 
                 } else if (menuItem.getItemId() == R.id.action_profile) {
                     fragment = new ProfileFragment();
+                    getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorAccent2));
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        getWindow().setStatusBarColor(HomeActivity.this.getResources().getColor(R.color.colorAccent2));
-                    }
                 }
 
                 return loadFragment(fragment);

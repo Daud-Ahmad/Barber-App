@@ -3,17 +3,14 @@ package com.qtt.thebarber;
 import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.firebase.ui.auth.AuthUI;
-import com.firebase.ui.auth.IdpResponse;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -22,48 +19,29 @@ import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 import com.qtt.thebarber.Common.Common;
 import com.qtt.thebarber.databinding.ActivityMainBinding;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int APP_REQUEST_CODE = 301;
-    private List<AuthUI.IdpConfig> providers;
-//    private FirebaseAuth firebaseAuth;
+    private FirebaseAuth firebaseAuth;
     private FirebaseAuth.AuthStateListener authStateListener;
     private ActivityMainBinding binding;
 
     void loginUser() {
-        startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(providers).build(), APP_REQUEST_CODE);
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == APP_REQUEST_CODE) {
-
-            IdpResponse response = IdpResponse.fromResultIntent(data);
-
-            if (resultCode == RESULT_OK) {
-//                FirebaseUser user = firebaseAuth.getCurrentUser();
-            } else{
-                Toast.makeText(this, "Failed to sign in", Toast.LENGTH_SHORT).show();
-            }
-        }
+        startActivity(new Intent(this, LoginWithPhoneNumberActivity.class));
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-//        firebaseAuth.addAuthStateListener(authStateListener);
+        firebaseAuth.addAuthStateListener(authStateListener);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         if (authStateListener != null) {
-//            firebaseAuth.removeAuthStateListener(authStateListener);
+            firebaseAuth.removeAuthStateListener(authStateListener);
         }
     }
 
@@ -74,11 +52,7 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorBackground));
 
-        AuthUI.IdpConfig.PhoneBuilder builder = new AuthUI.IdpConfig.PhoneBuilder();
-        builder.setDefaultCountryIso("vn");
-
-        providers = Arrays.asList(builder.build());
-//        firebaseAuth = FirebaseAuth.getInstance();
+        firebaseAuth = FirebaseAuth.getInstance();
         authStateListener = firebaseAuth1 -> {
             FirebaseUser user = firebaseAuth1.getCurrentUser();
 
@@ -94,13 +68,41 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport report) {
 
-                        setContentView(binding.getRoot());
+                        FirebaseUser user = firebaseAuth.getCurrentUser();
+                        if (user != null) {
 
-                        binding.btnLogin.setOnClickListener(v -> loginUser());
+                            FirebaseMessaging.getInstance().getToken()
+                                    .addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            String token = task.getResult();
+                                            Common.updateToken(getBaseContext(), token);
 
-//                        FirebaseUser user = firebaseAuth.getCurrentUser();
-//                        if (user != null) {
-//
+                                            Log.d("TOKEN_CLIENT_APP", token);
+
+                                            Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                                            intent.putExtra(Common.IS_LOGIN, true);
+                                            startActivity(intent);
+                                            finish();
+                                        } else {
+                                            Toast.makeText(MainActivity.this, "Failed to get FCM token", Toast.LENGTH_SHORT).show();
+                                            Log.e("TOKEN_CLIENT_APP", "Error retrieving token", task.getException());
+
+                                            Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                                            intent.putExtra(Common.IS_LOGIN, true);
+                                            startActivity(intent);
+                                            finish();
+                                        }
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                                        Log.e("TOKEN_CLIENT_APP", "Error retrieving token", e);
+
+                                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                                        intent.putExtra(Common.IS_LOGIN, true);
+                                        startActivity(intent);
+                                        finish();
+                                    });
+
 //                            FirebaseInstanceId.getInstance()
 //                                    .getInstanceId()
 //                                    .addOnCompleteListener(task -> {
@@ -121,12 +123,12 @@ public class MainActivity extends AppCompatActivity {
 //                                        startActivity(intent);
 //                                        finish();
 //                                    });
-//
-//                        } else {
-//                            setContentView(binding.getRoot());
-//
-//                            binding.btnLogin.setOnClickListener(v -> loginUser());
-//                        }
+
+                        } else {
+                            setContentView(binding.getRoot());
+
+                            binding.btnLogin.setOnClickListener(v -> loginUser());
+                        }
                     }
 
                     @Override
@@ -137,6 +139,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkUserFromFirebase(FirebaseUser user) {
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        String token = task.getResult();
+                        Common.updateToken(getBaseContext(), token);
+
+                        Log.d("TOKEN_CLIENT_APP", token);
+
+                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                        intent.putExtra(Common.IS_LOGIN, true);
+                        startActivity(intent);
+                        finish();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Failed to get FCM token", Toast.LENGTH_SHORT).show();
+                        Log.e("TOKEN_CLIENT_APP", "Error retrieving token", task.getException());
+
+                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                        intent.putExtra(Common.IS_LOGIN, true);
+                        startActivity(intent);
+                        finish();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e("TOKEN_CLIENT_APP", "Error retrieving token", e);
+
+                    Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                    intent.putExtra(Common.IS_LOGIN, true);
+                    startActivity(intent);
+                    finish();
+                });
+
 //        FirebaseInstanceId.getInstance()
 //                .getInstanceId()
 //                .addOnCompleteListener(task -> {

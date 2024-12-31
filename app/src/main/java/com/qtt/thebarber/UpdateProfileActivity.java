@@ -1,14 +1,11 @@
 package com.qtt.thebarber;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.PointerIconCompat;
-
-import android.app.AlertDialog;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -18,16 +15,18 @@ import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.google.gson.Gson;
 import com.qtt.thebarber.Common.Common;
 import com.qtt.thebarber.Interface.IUpdateProfileListener;
 import com.qtt.thebarber.databinding.ActivityUpdateProfileBinding;
@@ -35,6 +34,7 @@ import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -44,6 +44,7 @@ import java.util.Random;
 public class UpdateProfileActivity extends AppCompatActivity implements IUpdateProfileListener {
     ActivityUpdateProfileBinding binding;
     private static final int MY_CAMERA_REQUEST_CODE = 911;
+    private static final int REQUEST_STORAGE_PERMISSION = 100;
     Uri fileUri;
 //    AlertDialog dialog;
     StorageReference storageReference;
@@ -76,21 +77,15 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
         binding.edtUserAddress.setText(Common.currentUser.getAddress());
         binding.edtUserPhone.setText(Common.currentUser.getPhoneNumber());
 
-        if (!Common.currentUser.getAvatar().isEmpty()) {
+        if (Common.currentUser.getAvatar() != null && !Common.currentUser.getAvatar().isEmpty()) {
             Picasso.get().load(Common.currentUser.getAvatar()).error(R.drawable.user_avatar).into(binding.imgUserAvatar);
         } else {
             Picasso.get().load(Common.currentUser.getAvatar()).error(R.drawable.user_avatar).into(binding.imgUserAvatar);
         }
 
         binding.imgAddAvatar.setOnClickListener(v -> {
-            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-            StrictMode.setVmPolicy(builder.build());
-
-            fileUri = getOutputMediaFileUri();
-
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
-            startActivityForResult(intent, MY_CAMERA_REQUEST_CODE);
+//            checkStoragePermission();
+            onClickImageUpdate();
         });
 
         binding.btnUpdate.setOnClickListener(v -> {
@@ -114,6 +109,17 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
 //                            dialog.dismiss();
                         });
         });
+    }
+
+    private void onClickImageUpdate(){
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
+
+        fileUri = getOutputMediaFileUri();
+
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+        startActivityForResult(intent, MY_CAMERA_REQUEST_CODE);
     }
 
     private void upLoadPicture(Uri fileUri) {
@@ -179,6 +185,37 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
         return mediaFile;
     }
 
+
+    private void checkStoragePermission() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13 (API level 33) and above
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES}, REQUEST_STORAGE_PERMISSION);
+            } else {
+                onClickImageUpdate();
+            }
+        } else {
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_STORAGE_PERMISSION);
+            } else {
+                onClickImageUpdate();
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_STORAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                onClickImageUpdate();
+            } else {
+                Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -188,7 +225,10 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
             ExifInterface exifInterface = null;
 
             try {
-                bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
+                // Use ContentResolver to open an InputStream
+//                InputStream inputStream = getContentResolver().openInputStream(fileUri);
+//                bitmap = BitmapFactory.decodeStream(inputStream);
+                bitmap = loadImageFromMediaStore(fileUri.getPath());
                 exifInterface = new ExifInterface(getContentResolver().openInputStream(fileUri));
 
                 int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
@@ -217,6 +257,39 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
             }
         }
     }
+
+    private Bitmap loadImageFromMediaStore(String filePath) {
+        Bitmap bitmap = null;
+        try {
+            // Query MediaStore for the content URI of the file
+            Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+            String[] projection = {MediaStore.Images.Media._ID};
+            String selection = MediaStore.Images.Media.DATA + "=?";
+            String[] selectionArgs = new String[]{filePath};
+
+            Cursor cursor = getContentResolver().query(uri, projection, selection, selectionArgs, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int idIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID);
+                long id = cursor.getLong(idIndex);
+
+                // Build the content URI for the specific image
+                Uri contentUri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, String.valueOf(id));
+
+                // Decode the bitmap
+                InputStream inputStream = getContentResolver().openInputStream(contentUri);
+                bitmap = BitmapFactory.decodeStream(inputStream);
+                inputStream.close();
+            }
+            if (cursor != null) {
+                cursor.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
+        }
+        return bitmap;
+    }
+
 
     private Bitmap rotateBitmap(Bitmap bitmap, int degree) {
         Matrix matrix = new Matrix();
