@@ -14,7 +14,6 @@ import com.firebase.ui.auth.IdpResponse;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.iid.FirebaseInstanceId;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -138,27 +137,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkUserFromFirebase(FirebaseUser user) {
-        FirebaseInstanceId.getInstance()
-                .getInstanceId()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        Common.updateToken(getBaseContext(), task.getResult().getToken());
-
-                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-                        intent.putExtra(Common.IS_LOGIN, true);
-                        startActivity(intent);
-                        finish();
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-                intent.putExtra(Common.IS_LOGIN, true);
-                startActivity(intent);
-                finish();
-            }
-        });
+//        FirebaseInstanceId.getInstance()
+//                .getInstanceId()
+//                .addOnCompleteListener(task -> {
+//                    if (task.isSuccessful()) {
+//                        Common.updateToken(getBaseContext(), task.getResult().getToken());
+//
+//                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+//                        intent.putExtra(Common.IS_LOGIN, true);
+//                        startActivity(intent);
+//                        finish();
+//                    }
+//                }).addOnFailureListener(new OnFailureListener() {
+//            @Override
+//            public void onFailure(@NonNull Exception e) {
+//                Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+//                Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+//                intent.putExtra(Common.IS_LOGIN, true);
+//                startActivity(intent);
+//                finish();
+//            }
+//        });
     }
 
 }
