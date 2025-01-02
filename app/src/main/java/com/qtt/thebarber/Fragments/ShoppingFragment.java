@@ -57,6 +57,23 @@ public class ShoppingFragment extends Fragment implements IShoppingItemsLoadList
     FragmentShoppingBinding binding;
     CartDataSource cartDataSource;
 
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        binding = FragmentShoppingBinding.inflate(inflater, container, false);
+        View view =  binding.getRoot();
+
+        iShoppingItemsLoadListener = this;
+        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
+        //Default load
+        loadShoppingItems(binding.chipWax.getText().toString());
+
+        initView();
+
+        return view;
+    }
+
 
     void chipWaxClick() {
         setChipSelected(binding.chipWax);
@@ -126,24 +143,6 @@ public class ShoppingFragment extends Fragment implements IShoppingItemsLoadList
 
     public ShoppingFragment() {
         // Required empty public constructor
-    }
-
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        binding = FragmentShoppingBinding.inflate(inflater, container, false);
-        View view =  binding.getRoot();
-
-        iShoppingItemsLoadListener = this;
-        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
-        //Default load
-        loadShoppingItems(binding.chipWax.getText().toString());
-
-        initView();
-
-        return view;
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -445,10 +445,10 @@
                     app:cardElevation="0dp"
                     android:elevation="0dp"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="100dp">
                     <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="match_parent">
 
                         <ImageView
                             android:src="@drawable/ic_baseline_image_24"
@@ -458,11 +458,12 @@
                             android:layout_width="50dp"
                             android:layout_height="50dp"/>
 
-<!--                        <ss.com.bannerslider.Slider-->
-<!--                            android:id="@+id/banner_slider"-->
-<!--                            android:layout_width="match_parent"-->
-<!--                            android:layout_height="wrap_content"-->
-<!--                            app:slider_loopSlides="true" />-->
+                        <androidx.viewpager2.widget.ViewPager2
+                            android:id="@+id/viewPager"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center" />
+
                     </FrameLayout>
 
                 </androidx.cardview.widget.CardView>

@@ -45,10 +45,15 @@ public class MyBarberAdapter extends RecyclerView.Adapter<MyBarberAdapter.Barber
     @Override
     public void onBindViewHolder(@NonNull BarberViewHolder holder, int position) {
         holder.binding.tvBarberName.setText(barberList.get(position).getName());
-        holder.binding.rtbBarber.setRating((float) (barberList.get(position).getRating() / ( barberList.get(position).getRatingTimes() == 0 ? 1 : barberList.get(position).getRatingTimes())));
-        holder.binding.tvRatingTimes.setText(new StringBuilder(barberList.get(position).getRatingTimes() + "").append(" ratings").toString());
-
-        if (!barberList.get(position).getAvatar().isEmpty()) {
+        try {
+            holder.binding.rtbBarber.setRating((float) (barberList.get(position).getRating() / ( barberList.get(position).getRatingTimes() == 0 ? 1 : barberList.get(position).getRatingTimes())));
+        }
+        catch (Exception e){}
+        try {
+            holder.binding.tvRatingTimes.setText(new StringBuilder(barberList.get(position).getRatingTimes() + "").append(" ratings").toString());
+        }
+        catch (Exception e){}
+        if (barberList.get(position).getAvatar() != null && !barberList.get(position).getAvatar().isEmpty()) {
             Picasso.get().load(barberList.get(position).getAvatar()).error(R.drawable.user_avatar).into(holder.binding.imgBarberAvt);
         }
 

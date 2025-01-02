@@ -20,8 +20,10 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.qtt.thebarber.Adapter.HorizontalCalendar;
 import com.qtt.thebarber.Adapter.MyTimeSlotAdapter;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Common.SpacesItemDecoration;
 import com.qtt.thebarber.EventBus.LoadTimeSlotEvent;
 import com.qtt.thebarber.Interface.ITimeSlotLoadListener;
@@ -36,17 +38,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-//import devs.mulham.horizontalcalendar.HorizontalCalendar;
-//import devs.mulham.horizontalcalendar.HorizontalCalendarView;
-//import devs.mulham.horizontalcalendar.utils.HorizontalCalendarListener;
-//import dmax.dialog.SpotsDialog;
 
 public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListener {
 
     SimpleDateFormat simpleDateFormat;
     ITimeSlotLoadListener iTimeSlotLoadListener;
     DocumentReference barberDoc;
-//    AlertDialog alertDialog;
+    private LoadingDialog alertDialog;
     FragmentBookingStep3Binding binding;
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -60,7 +58,7 @@ public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListe
     }
 
     private void loadAvailableTimeSlotOfBarber(String barberId, final String date) {
-//        alertDialog.show();
+        alertDialog.show();
 
         // /AllSalon/Florida/Branch/0n7ikrtgQXW4EXhuJ0qy/Barbers/Nsa4hBFukd8UZYMiRe5y
         barberDoc = FirebaseFirestore.getInstance()
@@ -137,7 +135,7 @@ public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListe
 
         iTimeSlotLoadListener = this;
 
-//        alertDialog = new SpotsDialog.Builder().setContext(getActivity()).setCancelable(false).build();
+        alertDialog = new LoadingDialog(getContext());
 
         simpleDateFormat = new SimpleDateFormat("dd_MM_yyyy");
     }
@@ -176,6 +174,22 @@ public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListe
         Calendar endDate = Calendar.getInstance();
         endDate.add(Calendar.DATE, 4); //current date + 2 day
 
+        new HorizontalCalendar(
+                getContext(),
+                binding.rvCalendar,
+                startDate.getTime(),
+                endDate.getTime(),
+                selectedDate -> {
+                    // Handle the selected date
+                    if (selectedDate.getTimeInMillis() != Common.bookingDate.getTimeInMillis()) {
+                        Common.bookingDate = selectedDate;
+                        loadAvailableTimeSlotOfBarber(Common.currentBarber.getBarberId(), simpleDateFormat.format(selectedDate.getTime()));
+                    }
+                    System.out.println("Selected Date: " + selectedDate.getTime());
+                }
+        );
+
+
 //        HorizontalCalendar horizontalCalendar = new HorizontalCalendar.Builder(view, R.id.calendar_view)
 //                .range(startDate, endDate)
 //                .datesNumberOnScreen(5)
@@ -204,14 +218,14 @@ public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListe
         MyTimeSlotAdapter myTimeSlotAdapter = new MyTimeSlotAdapter(getContext(), timeSlotList);
         binding.recyclerTimeSlot.setAdapter(myTimeSlotAdapter);
 
-//        alertDialog.dismiss();
+        alertDialog.dismiss();
     }
 
     @Override
     public void onTimeSlotLoadFailed(String message) {
         Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
 
-//        alertDialog.dismiss();
+        alertDialog.dismiss();
     }
 
     @Override
@@ -219,6 +233,6 @@ public class BookingStep3Fragment extends Fragment implements ITimeSlotLoadListe
         MyTimeSlotAdapter myTimeSlotAdapter = new MyTimeSlotAdapter(getContext());
         binding.recyclerTimeSlot.setAdapter(myTimeSlotAdapter);
 
-//        alertDialog.dismiss();
+        alertDialog.dismiss();
     }
 }

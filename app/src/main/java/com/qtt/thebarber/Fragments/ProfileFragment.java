@@ -33,7 +33,6 @@ import java.util.List;
 public class ProfileFragment extends Fragment {
 
     FragmentProfileBinding binding;
-//    AlertDialog dialog;
 
     public ProfileFragment() {
         // Required empty public constructor
@@ -80,7 +79,6 @@ public class ProfileFragment extends Fragment {
     }
 
     private void initView() {
-//        dialog = new SpotsDialog.Builder().setContext(getContext()).setCancelable(false).build();
 
         if (Common.currentUser != null && Common.currentUser.getAvatar() != null && Common.currentUser.getAvatar().isEmpty()) {
             binding.imgUserAvatar.setImageDrawable(getContext().getResources().getDrawable(R.drawable.user_avatar));
@@ -152,7 +150,6 @@ public class ProfileFragment extends Fragment {
                     Intent intent = new Intent(getContext(), MainActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
-                    getActivity().finish();
                 });
 
         AlertDialog dialog = builder.create();

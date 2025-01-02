@@ -1,13 +1,11 @@
 package com.qtt.thebarber;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
-import android.app.AlertDialog;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -15,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.qtt.thebarber.Adapter.MyHistoryAdapter;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.EventBus.HistoryLoadEvent;
 import com.qtt.thebarber.Model.BookingInformation;
 import com.qtt.thebarber.databinding.ActivityHistoryBinding;
@@ -29,7 +28,7 @@ import java.util.List;
 public class HistoryActivity extends AppCompatActivity {
 
     ActivityHistoryBinding binding;
-//    AlertDialog dialog;
+    private LoadingDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +45,7 @@ public class HistoryActivity extends AppCompatActivity {
     }
 
     private void loadUserBookingInformation() {
-//        dialog.show();
+        dialog.show();
         ///User/+841689294631/Booking
         CollectionReference userBookingRef = FirebaseFirestore.getInstance()
                 .collection("User")
@@ -68,16 +67,16 @@ public class HistoryActivity extends AppCompatActivity {
 
                         EventBus.getDefault().post(new HistoryLoadEvent(true, bookingInformations));
                     }
-//                    dialog.dismiss();
+                    dialog.dismiss();
                 })
                 .addOnFailureListener(e -> {
                     EventBus.getDefault().post(new HistoryLoadEvent(false, e.getMessage()));
-//                    dialog.dismiss();
+                    dialog.dismiss();
                 });
     }
 
     private void initView() {
-//        dialog = new SpotsDialog.Builder().setContext(this).setCancelable(false).build();
+        dialog = new LoadingDialog(this);
 
         binding.recyclerHistory.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);

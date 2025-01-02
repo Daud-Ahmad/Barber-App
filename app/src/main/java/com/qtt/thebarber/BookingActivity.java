@@ -21,6 +21,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.qtt.thebarber.Adapter.MyViewPagerAdapter;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.EventBus.BarberDoneEvent;
 import com.qtt.thebarber.EventBus.ConfirmBookingEvent;
 import com.qtt.thebarber.EventBus.EnableNextButtonEvent;
@@ -43,7 +44,7 @@ import java.util.List;
 
 public class BookingActivity extends AppCompatActivity implements IBarberServicesLoadListener {
 
-//    AlertDialog alertDialog;
+    private LoadingDialog alertDialog;
     CollectionReference barbersRef;
     ActivityBookingBinding binding;
     IBarberServicesLoadListener iBarberServicesLoadListener;
@@ -80,7 +81,7 @@ public class BookingActivity extends AppCompatActivity implements IBarberService
 
     private void loadBarberServices() {
         ///AllSalon/Florida/Branch/0n7ikrtgQXW4EXhuJ0qy/Services/
-//        alertDialog.show();
+        alertDialog.show();
 
         FirebaseFirestore.getInstance()
                 .collection("AllSalon")
@@ -101,7 +102,7 @@ public class BookingActivity extends AppCompatActivity implements IBarberService
                         }
                         Log.d("BService", "loadBarberServices: " + barberServices.size());
                         iBarberServicesLoadListener.onBarberServicesLoadSuccess(barberServices);
-//                        alertDialog.dismiss();
+                        alertDialog.dismiss();
                     }
                 });
     }
@@ -116,7 +117,7 @@ public class BookingActivity extends AppCompatActivity implements IBarberService
 
     ///AllSalon/Florida/Branch/0n7ikrtgQXW4EXhuJ0qy/Barbers/
     private void loadBarbersBySalon(String id) {
-//        alertDialog.show();
+        alertDialog.show();
 
         if (!TextUtils.isEmpty(Common.cityName)) {
             barbersRef = FirebaseFirestore.getInstance().collection("AllSalon")
@@ -142,13 +143,13 @@ public class BookingActivity extends AppCompatActivity implements IBarberService
 //                                localBroadcastManager.sendBroadcast(intent);
                                 EventBus.getDefault().post(new BarberDoneEvent(barberList));
 
-//                                alertDialog.dismiss();
+                                alertDialog.dismiss();
                             }
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-//                    alertDialog.dismiss();
+                    alertDialog.dismiss();
                 }
             });
         }
@@ -203,7 +204,7 @@ public class BookingActivity extends AppCompatActivity implements IBarberService
             getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorBackground));
         }
 
-//        alertDialog = new SpotsDialog.Builder().setContext(this).setCancelable(false).build();
+        alertDialog = new LoadingDialog(this);
         iBarberServicesLoadListener = this;
 
         setupStepView();

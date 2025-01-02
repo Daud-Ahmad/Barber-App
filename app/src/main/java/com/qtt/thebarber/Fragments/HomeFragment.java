@@ -4,21 +4,20 @@ package com.qtt.thebarber.Fragments;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
-import android.text.TextUtils;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -36,16 +35,15 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-//import com.qtt.barberbooking.databinding.FragmentHomeBinding;
-import com.qtt.thebarber.Adapter.HomeSliderAdapter;
 import com.qtt.thebarber.Adapter.ServerLookBookAdapter;
+import com.qtt.thebarber.Adapter.SliderAdapter;
 import com.qtt.thebarber.BookingActivity;
 import com.qtt.thebarber.CartActivity;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Database.CartDataSource;
 import com.qtt.thebarber.Database.CartDatabase;
 import com.qtt.thebarber.Database.LocalCartDataSource;
-import com.qtt.thebarber.EventBus.ClearCartEvent;
 import com.qtt.thebarber.HistoryActivity;
 import com.qtt.thebarber.Interface.IBannerLoadListener;
 import com.qtt.thebarber.Interface.IBookingInfoChangeListener;
@@ -56,19 +54,12 @@ import com.qtt.thebarber.Model.BarberService;
 import com.qtt.thebarber.Model.BookingInformation;
 import com.qtt.thebarber.Model.LookBook;
 import com.qtt.thebarber.NotificationActivity;
-import com.qtt.thebarber.Service.PicassoImageLoadingService;
 import com.qtt.thebarber.databinding.FragmentHomeBinding;
-
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-//import dmax.dialog.SpotsDialog;
-//import io.paperdb.Paper;
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -81,9 +72,77 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
     EventListener<QuerySnapshot> notificationEvent;
     ListenerRegistration notificationListener;
     INotificationCountListener iNotificationCountListener;
-//    AlertDialog dialog;
-
+    private LoadingDialog dialog;
     CartDataSource cartDataSource;
+
+    //FireStore
+    CollectionReference bannerRef, looBookRef;
+
+    //Interface
+    IBannerLoadListener iBannerLoadListener;
+    ILookBookLoadListener iLookBookLoadListener;
+    IBookingInfoLoadListener iBookingInfoLoadListener;
+    IBookingInfoChangeListener iBookingInfoChangeListener;
+
+    ListenerRegistration userBookingListener = null;
+    EventListener<QuerySnapshot> userBookingEvent = null;
+
+    private Handler sliderHandler;
+
+    public HomeFragment() {
+        bannerRef = FirebaseFirestore.getInstance().collection("Banner");
+        looBookRef = FirebaseFirestore.getInstance().collection("LookBook");
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        dialog = new LoadingDialog(getContext());
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        View view = binding.getRoot();
+
+        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
+
+        //Init slider, interface
+//        Slider.init(new PicassoImageLoadingService());
+        iBannerLoadListener = this;
+        iLookBookLoadListener = this;
+        iBookingInfoLoadListener = this;
+        iBookingInfoChangeListener = this;
+        iNotificationCountListener = this;
+
+
+        //Check account
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null) {
+            setUserInformation();
+            loadBanners();
+            loadLookBooks();
+            initRealtimeUserBooking();
+            loadUserBooking();
+            countCartItem();
+            initNotificationRealTimeUpdate();
+            loadNotification();
+        }
+
+        binding.cardViewBooking.setOnClickListener(v -> booking());
+        binding.cardViewCart.setOnClickListener(v -> openCart());
+        binding.cardViewHistory.setOnClickListener(v -> openHistory());
+        binding.btnBookingChange.setOnClickListener(v -> changeBooking());
+        binding.btnBookingDelete.setOnClickListener(v -> deleteBooking());
+
+        binding.cardViewBookingInfo.setVisibility(View.GONE);
+
+        binding.cardViewNotification.setOnClickListener(v -> startActivity(new Intent(getActivity(), NotificationActivity.class)));
+
+        return view;
+    }
 
 
     void booking() {
@@ -168,7 +227,7 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
          * - Delete booking form user booking
          * - Delete event in calendar*/
         if (Common.currentBookingInfo != null) {
-//            dialog.show();
+            dialog.show();
             //AllSalon/Florida/Branch/0n7ikrtgQXW4EXhuJ0qy/Barbers/Nsa4hBFukd8UZYMiRe5y/07_08_2019
             DocumentReference barberBookingRef = FirebaseFirestore.getInstance()
                     .collection("AllSalon")
@@ -190,8 +249,8 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
                     }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-//                    if (dialog.isShowing())
-//                        dialog.dismiss();
+                    if (dialog.isShowing())
+                        dialog.dismiss();
                     Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
@@ -248,75 +307,8 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
             Toast.makeText(getActivity(), "Booking information must not be null!", Toast.LENGTH_SHORT).show();
             Log.d("HOME_FRAGMENT", "deleteBookingFromUser: Id is null");
         }
-//        if (dialog.isShowing())
-//            dialog.dismiss();
-    }
-
-    //FireStore
-    CollectionReference bannerRef, looBookRef;
-
-    //Interface
-    IBannerLoadListener iBannerLoadListener;
-    ILookBookLoadListener iLookBookLoadListener;
-    IBookingInfoLoadListener iBookingInfoLoadListener;
-    IBookingInfoChangeListener iBookingInfoChangeListener;
-
-    ListenerRegistration userBookingListener = null;
-    EventListener<QuerySnapshot> userBookingEvent = null;
-
-    public HomeFragment() {
-        bannerRef = FirebaseFirestore.getInstance().collection("Banner");
-        looBookRef = FirebaseFirestore.getInstance().collection("LookBook");
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-//        dialog = new SpotsDialog.Builder().setContext(getContext()).setCancelable(false).build();
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        binding = com.qtt.thebarber.databinding.FragmentHomeBinding.inflate(inflater, container, false);
-        View view = binding.getRoot();
-
-        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
-
-        //Init slider, interface
-//        Slider.init(new PicassoImageLoadingService());
-        iBannerLoadListener = this;
-        iLookBookLoadListener = this;
-        iBookingInfoLoadListener = this;
-        iBookingInfoChangeListener = this;
-        iNotificationCountListener = this;
-
-
-        //Check account
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            setUserInformation();
-            loadBanners();
-            loadLookBooks();
-            initRealtimeUserBooking();
-            loadUserBooking();
-            countCartItem();
-            initNotificationRealTimeUpdate();
-            loadNotification();
-        }
-
-        binding.cardViewBooking.setOnClickListener(v -> booking());
-        binding.cardViewCart.setOnClickListener(v -> openCart());
-        binding.cardViewHistory.setOnClickListener(v -> openHistory());
-        binding.btnBookingChange.setOnClickListener(v -> changeBooking());
-        binding.btnBookingDelete.setOnClickListener(v -> deleteBooking());
-
-        binding.cardViewBookingInfo.setVisibility(View.GONE);
-
-        binding.cardViewNotification.setOnClickListener(v -> startActivity(new Intent(getActivity(), NotificationActivity.class)));
-
-        return view;
+        if (dialog.isShowing())
+            dialog.dismiss();
     }
 
     private void initNotificationRealTimeUpdate() {
@@ -460,7 +452,9 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot bannerSnapShot : task.getResult()) {
                             LookBook banner = bannerSnapShot.toObject(LookBook.class);
-                            bannerList.add(banner);
+                            if (banner.getUrl() != null) {
+                                bannerList.add(banner);
+                            }
                         }
 
                         iBannerLoadListener.onBannerLoadSuccess(bannerList);
@@ -475,8 +469,27 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
 
     @Override
     public void onBannerLoadSuccess(List<LookBook> bannerList) {
+        // Set up the adapter
+        SliderAdapter sliderAdapter = new SliderAdapter(getContext(), bannerList);
+        binding.viewPager.setAdapter(sliderAdapter);
 //        binding.bannerSlider.setInterval(5000);
 //        binding.bannerSlider.setAdapter(new HomeSliderAdapter(bannerList));
+        // Initialize the slider handler
+        sliderHandler = new Handler(Looper.getMainLooper());
+        startAutoSlide(bannerList.size());
+    }
+
+    private void startAutoSlide(int itemCount) {
+        Runnable sliderRunnable = new Runnable() {
+            @Override
+            public void run() {
+                int currentItem = binding.viewPager.getCurrentItem();
+                int nextItem = (currentItem + 1) % itemCount; // Loop back to the first item
+                binding.viewPager.setCurrentItem(nextItem, true);
+                sliderHandler.postDelayed(this, 3000); // Auto-slide every 3 seconds
+            }
+        };
+        sliderHandler.postDelayed(sliderRunnable, 3000); // Initial delay
     }
 
     @Override
@@ -557,6 +570,11 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
         if (userBookingListener != null) {
             userBookingListener.remove();
         }
+
+        // Cleanup to avoid memory leaks
+        if (sliderHandler != null) {
+            sliderHandler.removeCallbacksAndMessages(null);
+        }
         super.onDestroy();
     }
 
@@ -582,7 +600,4 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
     public void onStop() {
         super.onStop();
     }
-
-
-
 }

@@ -18,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.qtt.thebarber.Adapter.MySalonAdapter;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Common.SpacesItemDecoration;
 import com.qtt.thebarber.Interface.IAllSalonLoadListener;
 import com.qtt.thebarber.Interface.IBranchLoadListener;
@@ -26,7 +27,6 @@ import com.qtt.thebarber.databinding.FragmentBookingStep1Binding;
 
 import java.util.ArrayList;
 import java.util.List;
-//import dmax.dialog.SpotsDialog;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -41,7 +41,7 @@ public class BookingStep1Fragment extends Fragment implements IAllSalonLoadListe
 
     FragmentBookingStep1Binding binding;
 
-//    AlertDialog alertDialog;
+    private LoadingDialog alertDialog;
 
     private static BookingStep1Fragment instance;
 
@@ -65,7 +65,7 @@ public class BookingStep1Fragment extends Fragment implements IAllSalonLoadListe
         iAllSalonLoadListener = this;
         iBranchLoadListener = this;
 
-//        alertDialog = new SpotsDialog.Builder().setContext(getActivity()).setCancelable(false).build();
+        alertDialog = new LoadingDialog(getContext());
     }
 
     @Override
@@ -120,7 +120,7 @@ public class BookingStep1Fragment extends Fragment implements IAllSalonLoadListe
     }
 
     private void loadBranchOfArea(String areaName) {
-//        alertDialog.show();
+        alertDialog.show();
 
         Common.cityName = areaName;
 
@@ -155,12 +155,12 @@ public class BookingStep1Fragment extends Fragment implements IAllSalonLoadListe
         binding.recyclerSalon.setAdapter(mySalonAdapter);
         binding.recyclerSalon.setVisibility(View.VISIBLE);
 
-//        alertDialog.dismiss();
+        alertDialog.dismiss();
     }
 
     @Override
     public void onBranchLoadFailed(String message) {
         Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
-//        alertDialog.dismiss();
+        alertDialog.dismiss();
     }
 }

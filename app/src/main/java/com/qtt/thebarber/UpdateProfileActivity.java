@@ -28,6 +28,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Interface.IUpdateProfileListener;
 import com.qtt.thebarber.databinding.ActivityUpdateProfileBinding;
 import com.squareup.picasso.Picasso;
@@ -46,7 +47,7 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
     private static final int MY_CAMERA_REQUEST_CODE = 911;
     private static final int REQUEST_STORAGE_PERMISSION = 100;
     Uri fileUri;
-//    AlertDialog dialog;
+    private LoadingDialog dialog;
     StorageReference storageReference;
     IUpdateProfileListener iUpdateProfileListener;
 
@@ -54,15 +55,9 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityUpdateProfileBinding.inflate(getLayoutInflater());
+        getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorAccent2));
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorAccent2));
-        }
-
-//        dialog = new SpotsDialog.Builder()
-//                .setCancelable(false)
-//                .setContext(this)
-//                .build();
+        dialog = new LoadingDialog(this);
 
         initView();
         setContentView(binding.getRoot());
@@ -94,7 +89,7 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
             updateData.put("name", binding.edtUserName.getText().toString());
             updateData.put("address", binding.edtUserAddress.getText().toString());
 
-//                dialog.show();
+                dialog.show();
                 FirebaseFirestore.getInstance().collection("User")
                         .document(Common.currentUser.getPhoneNumber())
                         .update(updateData)
@@ -103,10 +98,10 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
 
                             upLoadPicture(fileUri);
 
-//                            dialog.dismiss();
+                            dialog.dismiss();
                         }).addOnFailureListener(e -> {
                             iUpdateProfileListener.OnUpdateProfileFailed(e.getMessage());
-//                            dialog.dismiss();
+                            dialog.dismiss();
                         });
         });
     }
@@ -124,7 +119,7 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
 
     private void upLoadPicture(Uri fileUri) {
         if (fileUri != null) {
-//            dialog.show();
+            dialog.show();
 
             String fileName = Common.getFileName(getContentResolver(), fileUri);
             String path = new StringBuilder("User_Avatar/").append(fileName).toString();
@@ -152,13 +147,13 @@ public class UpdateProfileActivity extends AppCompatActivity implements IUpdateP
                                 Log.d("Update_profile", "upLoadPicture: successfully " + url);
                                 Common.currentUser.setAvatar(url);
                                iUpdateProfileListener.onUpdateProfileSuccess(true);
-//                                dialog.dismiss();
+                                dialog.dismiss();
                             }).addOnFailureListener(e -> {iUpdateProfileListener.OnUpdateProfileFailed(e.getMessage());
-//                            dialog.dismiss();
+                            dialog.dismiss();
                             });
                 }
             }).addOnFailureListener(e -> {
-//                dialog.dismiss();
+                dialog.dismiss();
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             });
         } else {

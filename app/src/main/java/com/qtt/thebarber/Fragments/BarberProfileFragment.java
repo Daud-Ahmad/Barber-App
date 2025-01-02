@@ -70,7 +70,7 @@ public class BarberProfileFragment extends BottomSheetDialogFragment {
         binding.recyclerLookBook.setLayoutManager(new LinearLayoutManager(getContext(), RecyclerView.HORIZONTAL, false));
         binding.recyclerLookBook.addItemDecoration(new SpacesItemDecoration(16));
 
-        if (!Common.currentBarber.getAvatar().isEmpty()) {
+        if (Common.currentBarber.getAvatar() != null && !Common.currentBarber.getAvatar().isEmpty()) {
             Picasso.get().load(Common.currentBarber.getAvatar()).error(R.drawable.user_avatar).into(binding.imgUserAvatar);
         }
 

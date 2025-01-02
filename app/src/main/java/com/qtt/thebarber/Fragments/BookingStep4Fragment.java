@@ -23,15 +23,14 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Database.CartDataSource;
 import com.qtt.thebarber.Database.CartDatabase;
 import com.qtt.thebarber.Database.LocalCartDataSource;
 import com.qtt.thebarber.EventBus.ConfirmBookingEvent;
 import com.qtt.thebarber.Interface.INotificationSendListener;
 import com.qtt.thebarber.Model.BookingInformation;
-import com.qtt.thebarber.Model.FCMSendData;
 import com.qtt.thebarber.Model.MyNotification;
-import com.qtt.thebarber.Model.MyToken;
 import com.qtt.thebarber.Retrofit.IFCMApi;
 import com.qtt.thebarber.Retrofit.RetrofitClient;
 import com.qtt.thebarber.databinding.FragmentBookingStep4Binding;
@@ -45,12 +44,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
+
 import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -67,13 +65,39 @@ public class BookingStep4Fragment extends Fragment implements INotificationSendL
 
     IFCMApi ifcmApi;
 
-//    AlertDialog dialog;
+    private LoadingDialog dialog;
 
     INotificationSendListener iNotificationSendListener;
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        ifcmApi = RetrofitClient.getInstance().create(IFCMApi.class);
+
+        iNotificationSendListener = this;
+
+        simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy");
+
+        dialog = new LoadingDialog(getContext());
+        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
 
     void confirmBooking() {
-//        dialog.show();
+        dialog.show();
 
        getAllCart();
     }
@@ -209,37 +233,45 @@ public class BookingStep4Fragment extends Fragment implements INotificationSendL
 
                                                     .addOnCompleteListener(task1 -> {
                                                         if (task1.isSuccessful()) {
-                                                            MyToken myToken = task1.getResult().toObject(MyToken.class);
-                                                           // for (DocumentSnapshot documentSnapshot : task.getResult())
+                                                            dialog.dismiss();
+                                                            getActivity().finish();
+                                                            Toast.makeText(getContext(), "Success", Toast.LENGTH_SHORT).show();
+//                                                            MyToken myToken = task1.getResult().toObject(MyToken.class);
+//                                                           // for (DocumentSnapshot documentSnapshot : task.getResult())
+//
+////                                                            Log.d("AAAAA", myToken.getToken());
+//
+//                                                            FCMSendData sendRequest = new FCMSendData();
+//                                                            Map<String, String> dataSend = new HashMap<>();
+//                                                            dataSend.put(Common.TITLE_KEY, "New Booking");
+//                                                            dataSend.put(Common.CONTENT_KEY, "You have a new booking: " + Common.selectedService.getName() +", from user: " + Common.currentUser.getName());
+//
+//                                                            sendRequest.setData(dataSend);
+//                                                            sendRequest.setTo(myToken == null ? "" : myToken.getToken());
+//
+//                                                            Log.d("daaaa", "Crash");
 
-                                                            Log.d("AAAAA", myToken.getToken());
-
-                                                            FCMSendData sendRequest = new FCMSendData();
-                                                            Map<String, String> dataSend = new HashMap<>();
-                                                            dataSend.put(Common.TITLE_KEY, "New Booking");
-                                                            dataSend.put(Common.CONTENT_KEY, "You have a new booking: " + Common.selectedService.getName() +", from user: " + Common.currentUser.getName());
-
-                                                            sendRequest.setData(dataSend);
-                                                            sendRequest.setTo(myToken.getToken());
-
-                                                            compositeDisposable.add(ifcmApi.sendNotification(sendRequest)
-                                                                    .subscribeOn(Schedulers.io())
-                                                                    .observeOn(AndroidSchedulers.mainThread()) //mainThread()
-                                                                    .subscribe(fcmResponse -> {
-//                                                                        dialog.dismiss();
-
-                                                                        iNotificationSendListener.onNotificationSend(true);
-                                                                    }));
+//                                                            try {
+//                                                                compositeDisposable.add(ifcmApi.sendNotification(sendRequest)
+//                                                                        .subscribeOn(Schedulers.io())
+//                                                                        .observeOn(AndroidSchedulers.mainThread()) //mainThread()
+//                                                                        .subscribe(fcmResponse -> {
+////                                                                        dialog.dismiss();
+//
+//                                                                            iNotificationSendListener.onNotificationSend(true);
+//                                                                        }));
+//                                                            }
+//                                                            catch (Exception e){}
                                                         }
                                                     }));
                                 }).addOnFailureListener(e -> {
-//                                    if (dialog.isShowing())
-//                                        dialog.dismiss();
+                                    if (dialog.isShowing())
+                                        dialog.dismiss();
                                     Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                                 });
                     } else {
-//                        if (dialog.isShowing())
-//                            dialog.dismiss();
+                        if (dialog.isShowing())
+                            dialog.dismiss();
                         getActivity().finish();
                         Toast.makeText(getContext(), "Success", Toast.LENGTH_SHORT).show();
                     }
@@ -368,32 +400,6 @@ public class BookingStep4Fragment extends Fragment implements INotificationSendL
 
     private BookingStep4Fragment() {
         // Required empty public constructor
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        ifcmApi = RetrofitClient.getInstance().create(IFCMApi.class);
-
-        iNotificationSendListener = this;
-
-        simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy");
-
-//        dialog = new SpotsDialog.Builder().setContext(getContext()).setCancelable(false).build();
-        cartDataSource = new LocalCartDataSource(CartDatabase.getInstance(getContext()).cartDAO());
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        EventBus.getDefault().register(this);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        EventBus.getDefault().unregister(this);
     }
 
     @Override

@@ -24,6 +24,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 import com.qtt.thebarber.Fragments.HomeFragment;
 import com.qtt.thebarber.Fragments.ProfileFragment;
 import com.qtt.thebarber.Fragments.ShoppingFragment;
@@ -39,7 +40,7 @@ public class HomeActivity extends AppCompatActivity {
 
     CollectionReference userRef;
 
-//    AlertDialog alertDialog;
+    private LoadingDialog alertDialog;
 
     @Override
     protected void onResume() {
@@ -75,7 +76,7 @@ public class HomeActivity extends AppCompatActivity {
 
 
         userRef = FirebaseFirestore.getInstance().collection("User");
-//        alertDialog = new SpotsDialog.Builder().setContext(this).setCancelable(false).build();
+        alertDialog = new LoadingDialog(this);
 
         mSavedInstanceState = savedInstanceState;
 
@@ -105,7 +106,7 @@ public class HomeActivity extends AppCompatActivity {
         if (getIntent() != null) {
             boolean isLogin = getIntent().getBooleanExtra(Common.IS_LOGIN, false);
             if (isLogin) {
-//                alertDialog.show();
+                alertDialog.show();
                final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 //                Paper.init(HomeActivity.this);
 //                Paper.book().write(Common.LOGGED_KEY, user.getPhoneNumber());
@@ -126,8 +127,8 @@ public class HomeActivity extends AppCompatActivity {
                                         binding.bottomNavigation.setSelectedItemId(R.id.action_home);
                                     }
 
-//                                    if (alertDialog.isShowing())
-//                                        alertDialog.dismiss();
+                                    if (alertDialog.isShowing())
+                                        alertDialog.dismiss();
 
                                 }
                             }
@@ -165,8 +166,8 @@ public class HomeActivity extends AppCompatActivity {
         edtPhone.setText(phoneNumber);
 
         btnUpdate.setOnClickListener(v -> {
-//            if (!alertDialog.isShowing())
-//                alertDialog.show();
+            if (!alertDialog.isShowing())
+                alertDialog.show();
 
             final User user = new User(edtName.getText().toString(),
                     edtAddress.getText().toString(), phoneNumber, null);
@@ -177,8 +178,8 @@ public class HomeActivity extends AppCompatActivity {
                         @Override
                         public void onSuccess(Void aVoid) {
                             bottomSheetDialog.dismiss();
-//                            if (alertDialog.isShowing())
-//                                alertDialog.dismiss();
+                            if (alertDialog.isShowing())
+                                alertDialog.dismiss();
                             //Update
                             Common.currentUser = user;
                             binding.bottomNavigation.setSelectedItemId(R.id.action_home);
@@ -189,8 +190,8 @@ public class HomeActivity extends AppCompatActivity {
                 @Override
                 public void onFailure(@NonNull Exception e) {
                     bottomSheetDialog.dismiss();
-//                    if (alertDialog.isShowing())
-//                        alertDialog.dismiss();
+                    if (alertDialog.isShowing())
+                        alertDialog.dismiss();
                     Toast.makeText(HomeActivity.this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });

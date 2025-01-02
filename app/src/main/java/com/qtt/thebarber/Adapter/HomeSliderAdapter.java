@@ -5,9 +5,6 @@ import com.qtt.thebarber.Model.LookBook;
 
 import java.util.List;
 
-//import ss.com.bannerslider.adapters.SliderAdapter;
-//import ss.com.bannerslider.viewholder.ImageSlideViewHolder;
-
 public class HomeSliderAdapter  {
 
     List<LookBook> bannerList;

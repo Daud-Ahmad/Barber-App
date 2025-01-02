@@ -16,8 +16,10 @@ import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.PhoneAuthCredential;
+import com.google.firebase.auth.PhoneAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
 import com.qtt.thebarber.Common.Common;
+import com.qtt.thebarber.Common.LoadingDialog;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,13 +28,17 @@ public class LoginWithPhoneNumberActivity extends AppCompatActivity {
     private EditText phoneNumberEditText, otpCodeEditText;
     private Button sendOtpButton, verifyOtpButton;
 
+    private LoadingDialog loadingDialog;
+
     private FirebaseAuth firebaseAuth;
     private String verificationId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorAccent2));
         setContentView(R.layout.activity_login_with_phone_number);
+        loadingDialog = new LoadingDialog(this);
 
         phoneNumberEditText = findViewById(R.id.phone_number);
         otpCodeEditText = findViewById(R.id.otp_code);
@@ -54,33 +60,46 @@ public class LoginWithPhoneNumberActivity extends AppCompatActivity {
             return;
         }
 
-        PhoneAuthProvider.getInstance().verifyPhoneNumber(
-                phoneNumber,
-                60,
-                TimeUnit.SECONDS,
-                this,
-                new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+        loadingDialog.show();
+
+        FirebaseAuth firebaseAuth = FirebaseAuth.getInstance();
+
+        PhoneAuthOptions options = PhoneAuthOptions.newBuilder(firebaseAuth)
+                .setPhoneNumber(phoneNumber)        // Phone number to verify
+                .setTimeout(120L, TimeUnit.SECONDS) // Timeout duration
+                .setActivity(this)                 // Activity (for callback binding)
+                .setCallbacks(new PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                     @Override
                     public void onVerificationCompleted(@NonNull PhoneAuthCredential credential) {
-                        signInWithPhoneAuthCredential(credential);
+                        runOnUiThread(() -> {
+                            signInWithPhoneAuthCredential(credential);
+                        });
                     }
 
                     @Override
                     public void onVerificationFailed(@NonNull FirebaseException e) {
-                        Toast.makeText(LoginWithPhoneNumberActivity.this, "Verification failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                        Log.e("LoginActivity", "onVerificationFailed: ", e);
+                        runOnUiThread(() -> {
+                            loadingDialog.dismiss();
+                            Toast.makeText(LoginWithPhoneNumberActivity.this, "Verification failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e("LoginActivity", "onVerificationFailed: ", e);
+                        });
                     }
 
                     @Override
                     public void onCodeSent(@NonNull String s, @NonNull PhoneAuthProvider.ForceResendingToken token) {
                         super.onCodeSent(s, token);
-                        verificationId = s;
-                        otpCodeEditText.setVisibility(View.VISIBLE);
-                        verifyOtpButton.setVisibility(View.VISIBLE);
-                        Toast.makeText(LoginWithPhoneNumberActivity.this, "OTP sent!", Toast.LENGTH_SHORT).show();
+                        runOnUiThread(() -> {
+                            loadingDialog.dismiss();
+                            verificationId = s;
+                            otpCodeEditText.setVisibility(View.VISIBLE);
+                            verifyOtpButton.setVisibility(View.VISIBLE);
+                            Toast.makeText(LoginWithPhoneNumberActivity.this, "OTP sent!", Toast.LENGTH_SHORT).show();
+                        });
                     }
-                }
-        );
+                })
+                .build();
+
+        PhoneAuthProvider.verifyPhoneNumber(options);
     }
 
     private void verifyOtp() {
@@ -90,6 +109,8 @@ public class LoginWithPhoneNumberActivity extends AppCompatActivity {
             Toast.makeText(this, "Please enter the OTP", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        loadingDialog.show();
 
         if (verificationId != null) {
             PhoneAuthCredential credential = PhoneAuthProvider.getCredential(verificationId, code);
@@ -104,6 +125,7 @@ public class LoginWithPhoneNumberActivity extends AppCompatActivity {
                         AuthResult result = task.getResult();
                         if (result != null && result.getUser() != null) {
                             Log.e("TOKEN_CLIENT_APP", "Error retrieving token", task.getException());
+                            loadingDialog.dismiss();
 
                             Intent intent = new Intent(LoginWithPhoneNumberActivity.this, HomeActivity.class);
                             intent.putExtra(Common.IS_LOGIN, true);
@@ -111,6 +133,7 @@ public class LoginWithPhoneNumberActivity extends AppCompatActivity {
                             finish();
                         }
                     } else {
+                        loadingDialog.dismiss();
                         Toast.makeText(this, "Login failed!", Toast.LENGTH_SHORT).show();
                         Log.e("LoginActivity", "signInWithCredential:failure", task.getException());
                     }
