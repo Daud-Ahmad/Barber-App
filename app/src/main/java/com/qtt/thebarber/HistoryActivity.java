@@ -1,6 +1,5 @@
 package com.qtt.thebarber;
 
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -10,7 +9,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 import com.qtt.thebarber.Adapter.MyHistoryAdapter;
 import com.qtt.thebarber.Common.Common;
 import com.qtt.thebarber.Common.LoadingDialog;
@@ -35,10 +33,7 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityHistoryBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorBackground));
-        }
+        getWindow().setStatusBarColor(this.getResources().getColor(R.color.colorBackground));
 
         initView();
         loadUserBookingInformation();
@@ -53,8 +48,8 @@ public class HistoryActivity extends AppCompatActivity {
                 .collection("Booking");
 
 
-        userBookingRef.whereEqualTo("done", true)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
+        userBookingRef
+//                .whereEqualTo("done", true)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
