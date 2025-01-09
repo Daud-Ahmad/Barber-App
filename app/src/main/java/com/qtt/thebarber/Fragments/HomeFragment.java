@@ -50,6 +50,7 @@ import com.qtt.thebarber.Interface.IBookingInfoChangeListener;
 import com.qtt.thebarber.Interface.IBookingInfoLoadListener;
 import com.qtt.thebarber.Interface.ILookBookLoadListener;
 import com.qtt.thebarber.Interface.INotificationCountListener;
+import com.qtt.thebarber.MainActivity;
 import com.qtt.thebarber.Model.BarberService;
 import com.qtt.thebarber.Model.BookingInformation;
 import com.qtt.thebarber.Model.LookBook;
@@ -65,7 +66,8 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class HomeFragment extends Fragment implements IBannerLoadListener, ILookBookLoadListener, IBookingInfoLoadListener, IBookingInfoChangeListener, INotificationCountListener {
+public class HomeFragment extends Fragment implements IBannerLoadListener,
+        ILookBookLoadListener, IBookingInfoLoadListener, IBookingInfoChangeListener, INotificationCountListener {
 
     FragmentHomeBinding binding;
     CollectionReference notificationCol;
@@ -219,7 +221,18 @@ public class HomeFragment extends Fragment implements IBannerLoadListener, ILook
 
 
     void deleteBooking() {
-        deleteBookingFromBarber(false);
+        AlertDialog.Builder builder  = new AlertDialog.Builder(getContext());
+        builder.setTitle("Delete appointment")
+                .setMessage("Are you sure you want to delete this appointment?")
+                .setNegativeButton("Cancel", (dialoginterface, i) -> {
+                    dialoginterface.dismiss();
+                })
+                .setPositiveButton("OK", (dialog1, which) -> {
+                    deleteBookingFromBarber(false);
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void deleteBookingFromBarber(final boolean isChange) {
